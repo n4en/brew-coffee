@@ -1,0 +1,11 @@
+brew "git"
+brew "gh"
+brew "jq"
+brew "htop"
+brew "wget"
+brew "curl"
+brew "docker"
+brew "docker-compose"
+brew "kubectl"
+
+cask "visual-studio-code"
