@@ -1,0 +1,5 @@
+brew "awscli"
+brew "aws-cdk"
+brew "saml2aws"
+brew "eksctl"
+brew "awslogs"

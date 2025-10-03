@@ -1,0 +1,7 @@
+brew "kubectl"
+brew "kustomize"
+brew "helm"
+brew "kubectx"
+brew "k9s"
+brew "stern"
+brew "kubetail"

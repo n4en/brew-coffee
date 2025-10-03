@@ -1,0 +1,1 @@
+brew "google-cloud-sdk"
