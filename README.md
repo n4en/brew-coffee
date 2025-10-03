@@ -25,42 +25,6 @@ brew-coffee is a lightweight CLI tool to quickly set up and manage developer env
 
 ---
 
-## Requirements
-
-* macOS with **Homebrew**
-
-Don’t worry! `coffee.sh` automatically installs Homebrew if it’s missing.
-
----
-
-## Project Structure
-
-```
-
-.
-├── bundles
-│   ├── aws.Brewfile
-│   ├── azure.Brewfile
-│   ├── dev.Brewfile
-│   ├── gcp.Brewfile
-│   ├── infra.Brewfile
-│   ├── k8s.Brewfile
-│   ├── nodejs.Brewfile
-│   └── python.Brewfile
-├── coffee.sh
-├── LICENSE
-├── README.md
-└── scripts
-├── check.sh
-├── clean.sh
-├── install.sh
-├── list.sh
-└── utils.sh
-
-````
-
----
-
 ## Getting Started
 
 ### 1. Clone the repository
@@ -75,21 +39,6 @@ cd brew-coffee
 ```bash
 chmod +x ./coffee.sh
 ```
-
----
-
-## Scripts Overview
-
-| Script       | Purpose                                                     |
-| ------------ | ----------------------------------------------------------- |
-| `coffee.sh`  | Main CLI entry point, calls other scripts                   |
-| `install.sh` | Installs the requested bundles                              |
-| `clean.sh`   | Removes packages from the requested bundles                 |
-| `check.sh`   | Verifies if packages in bundles are installed               |
-| `list.sh`    | Lists all available bundles                                 |
-| `utils.sh`   | Shared helper functions, e.g., bundle resolution, DRY logic |
-
----
 
 ## Usage
 
