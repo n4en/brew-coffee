@@ -1,15 +1,18 @@
 #!/bin/bash
+set -euo pipefail
 
 source ./scripts/utils.sh
 
 check_bundle() {
     local bundle_name="$1"
-    local files=($(get_brewfiles "$bundle_name"))
+    local files=( $(get_brewfiles "$bundle_name") )
 
     echo "🔍 Checking '$bundle_name' bundle..."
     for file in "${files[@]}"; do
-        if [ -f "$file" ]; then
-            brew bundle check --file="$file"
+        if [[ -f "$file" ]]; then
+            if ! brew bundle check --file="$file"; then
+                echo "❌ Some packages missing in '$file'"
+            fi
         else
             echo "❌ Brewfile '$file' not found!"
         fi
@@ -17,7 +20,7 @@ check_bundle() {
     echo
 }
 
-if [ $# -eq 0 ] || [ "$1" == "all" ]; then
+if [[ $# -eq 0 || "${1:-}" == "all" ]]; then
     for file in "$BUNDLES_DIR"/*.Brewfile; do
         check_bundle "$(basename "$file" .Brewfile)"
     done
