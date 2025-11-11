@@ -2,8 +2,7 @@
 set -euo pipefail
 
 PLUGINS_DIR="./plugins"
- 
-# Detect OS type
+
 if [ "$(uname -s)" = "Darwin" ]; then
     OS_TYPE="macos"
 elif [ "$(uname -s)" = "Linux" ]; then
@@ -14,143 +13,129 @@ else
     OS_TYPE="unknown"
 fi
 
-# Find VS Code CLI based on platform
-if command -v code >/dev/null 2>&1; then
-    VSCODE_CLI="$(command -v code)"
-else
-    case "$OS_TYPE" in
-        macos)
-            if [ -x "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" ]; then
-                VSCODE_CLI="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
-            fi
-            ;;
-        linux)
-            for path in \
-                "$HOME/.local/share/code/bin/code" \
-                "/usr/share/code/bin/code" \
-                "/usr/local/bin/code" \
-                "/snap/bin/code" \
-                "/var/lib/flatpak/exports/bin/code"; do
-                if [ -x "$path" ]; then
-                    VSCODE_CLI="$path"
-                    break
+find_vscode_cli() {
+    local vscode_cli=""
+
+    if command -v code >/dev/null 2>&1; then
+        vscode_cli="$(command -v code)"
+    else
+        case "$OS_TYPE" in
+            macos)
+                if [ -x "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" ]; then
+                    vscode_cli="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
                 fi
-            done
-            ;;
-        windows)
-            for path in \
-                "$LOCALAPPDATA/Programs/Microsoft VS Code/bin/code" \
-                "$PROGRAMFILES/Microsoft VS Code/bin/code.cmd" \
-                "$PROGRAMFILES (x86)/Microsoft VS Code/bin/code.cmd"; do
-                if [ -x "$path" ]; then
-                    VSCODE_CLI="$path"
-                    break
-                fi
-            done
-            ;;
-    esac
-fi
-
-# If VS Code CLI wasn't found, set it to empty
-if [ -z "${VSCODE_CLI:-}" ]; then
-    VSCODE_CLI=""
-fi
-
-install_plugins_for_tool() {
-    local tool="$1"
-    local file="$PLUGINS_DIR/$tool.txt"
-    [ ! -f "$file" ] && return
-
-    echo "☕ Installing $tool plugins..."
-    # Debug: Show file contents
-    echo "📄 Reading plugins from: $file"
-    cat "$file"
-    
-    while IFS= read -r plugin || [ -n "$plugin" ]; do
-        # Trim whitespace
-        plugin=$(echo "$plugin" | tr -d '[:space:]')
-        
-        case "$plugin" in
-            ""|\#*) 
-                echo "⏭️  Skipping empty line or comment"
-                continue 
                 ;;
-        esac
-
-        case "$tool" in
-            vscode)
-                if [ -x "$VSCODE_CLI" ]; then
-                    echo "🔍 Checking if $plugin is already installed..."
-                    if ! "$VSCODE_CLI" --list-extensions | grep -i "^${plugin}$" > /dev/null; then
-                        echo "📦 Installing VSCode extension: $plugin"
-                        "$VSCODE_CLI" --install-extension "$plugin" || echo "⚠️ Failed to install $plugin"
-                    else
-                        echo "✅ Extension $plugin is already installed"
+            linux)
+                for path in \
+                    "$HOME/.local/share/code/bin/code" \
+                    "/usr/share/code/bin/code" \
+                    "/usr/local/bin/code" \
+                    "/snap/bin/code" \
+                    "/var/lib/flatpak/exports/bin/code"; do
+                    if [ -x "$path" ]; then
+                        vscode_cli="$path"
+                        break
                     fi
-                else
-                    echo "⚠️ VSCode CLI not found at: $VSCODE_CLI"
-                fi
+                done
                 ;;
-            chrome|jetbrains)
-                echo "⚠️ Installation not implemented yet for $tool plugin $plugin"
-                ;;
-            *)
-                echo "⚠️ Unknown tool: $tool"
+            windows)
+                for path in \
+                    "$LOCALAPPDATA/Programs/Microsoft VS Code/bin/code" \
+                    "$PROGRAMFILES/Microsoft VS Code/bin/code.cmd" \
+                    "$PROGRAMFILES (x86)/Microsoft VS Code/bin/code.cmd"; do
+                    if [ -x "$path" ]; then
+                        vscode_cli="$path"
+                        break
+                    fi
+                done
                 ;;
         esac
-    done < "$file"
-    echo "✅ $tool plugins installed!"
+    fi
+
+    echo "$vscode_cli"
 }
 
-uninstall_plugins_for_tool() {
+process_plugin_file() {
     local tool="$1"
+    local action="$2"
     local file="$PLUGINS_DIR/$tool.txt"
-    [ ! -f "$file" ] && return
-
-    echo "🧹 Uninstalling $tool plugins..."
-    echo "📄 Reading plugins from: $file"
-    cat "$file"
     
+    [ ! -f "$file" ] && return 0
+
+    local vscode_cli
+    vscode_cli="$(find_vscode_cli)"
+
+    case "$action" in
+        install)
+            echo "☕ Installing $tool plugins..."
+            ;;
+        uninstall)
+            echo "🧹 Uninstalling $tool plugins..."
+            ;;
+    esac
+
     while IFS= read -r plugin || [ -n "$plugin" ]; do
-        # Trim whitespace
         plugin=$(echo "$plugin" | tr -d '[:space:]')
-        
+
         case "$plugin" in
-            ""|\#*) 
-                echo "⏭️  Skipping empty line or comment"
-                continue 
+            ""|\#*)
+                continue
                 ;;
         esac
 
         case "$tool" in
             vscode)
-                if [ -x "$VSCODE_CLI" ]; then
-                    echo "🔍 Checking if $plugin is installed..."
-                    if "$VSCODE_CLI" --list-extensions | grep -i "^${plugin}$" > /dev/null; then
-                        echo "🗑️  Uninstalling VSCode extension: $plugin"
-                        "$VSCODE_CLI" --uninstall-extension "$plugin" || echo "⚠️ Failed to uninstall $plugin"
-                    else
-                        echo "ℹ️  Extension $plugin is not installed"
-                    fi
-                else
-                    echo "⚠️ VSCode CLI not found at: $VSCODE_CLI"
+                if [ -z "$vscode_cli" ]; then
+                    echo "⚠️  VSCode CLI not found"
+                    return 1
                 fi
+
+                case "$action" in
+                    install)
+                        if "$vscode_cli" --list-extensions 2>/dev/null | grep -i "^${plugin}$" > /dev/null 2>&1; then
+                            echo "✅ Extension $plugin is already installed"
+                        else
+                            echo "📦 Installing VSCode extension: $plugin"
+                            "$vscode_cli" --install-extension "$plugin" || echo "⚠️  Failed to install $plugin"
+                        fi
+                        ;;
+                    uninstall)
+                        if "$vscode_cli" --list-extensions 2>/dev/null | grep -i "^${plugin}$" > /dev/null 2>&1; then
+                            echo "🗑️  Uninstalling VSCode extension: $plugin"
+                            "$vscode_cli" --uninstall-extension "$plugin" || echo "⚠️  Failed to uninstall $plugin"
+                        else
+                            echo "ℹ️  Extension $plugin is not installed"
+                        fi
+                        ;;
+                esac
                 ;;
             chrome|jetbrains)
-                echo "⚠️ Uninstallation not implemented yet for $tool plugin $plugin"
+                echo "⚠️  $action not implemented yet for $tool plugin $plugin"
+                ;;
+            *)
+                echo "⚠️  Unknown tool: $tool"
                 ;;
         esac
     done < "$file"
-    echo "✅ $tool plugins uninstalled!"
+
+    echo "✅ $tool plugins $action complete!"
 }
 
 COMMAND="${1:-install}"
 
 for plugin_file in "$PLUGINS_DIR"/*.txt; do
+    [ -e "$plugin_file" ] || continue
     tool=$(basename "$plugin_file" .txt)
     case "$COMMAND" in
-        install) install_plugins_for_tool "$tool" ;;
-        clean|uninstall) uninstall_plugins_for_tool "$tool" ;;
-        *) echo "Usage: $0 {install|clean}" ;;
+        install)
+            process_plugin_file "$tool" "install"
+            ;;
+        clean|uninstall)
+            process_plugin_file "$tool" "uninstall"
+            ;;
+        *)
+            echo "Usage: $0 {install|clean|uninstall}"
+            exit 1
+            ;;
     esac
 done

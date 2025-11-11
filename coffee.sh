@@ -1,29 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolve script location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
 COMMAND="${1:-help}"
 shift || true
 
-check_homebrew_and_install_if_missing() {
-    if ! command -v brew &>/dev/null; then
-        log_warn "Homebrew not found. Attempting to install Homebrew (interactive)..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        # Attempt to eval brew environment for Apple Silicon & Intel
-        if [[ -f "/opt/homebrew/bin/brew" ]]; then
-            eval "\$('/opt/homebrew/bin/brew' shellenv)"
-        elif [[ -f "/usr/local/bin/brew" ]]; then
-            eval "\$('/usr/local/bin/brew' shellenv)"
-        fi
-        if ! command -v brew &>/dev/null; then
-            log_error "Homebrew installation failed or brew not in PATH. Please add brew to PATH and retry."
-            exit 1
-        fi
-        log_success "Homebrew installed and available."
+ensure_readline_installed() {
+    if ! brew list --formula | grep -q '^readline$'; then
+        log_warn "readline not found. Installing readline via Homebrew..."
+        brew install readline
+        log_success "readline installed."
     fi
+}
+
+check_homebrew_and_install_if_missing() {
+    if command -v brew &>/dev/null; then
+        return 0
+    fi
+
+    log_warn "Homebrew not found. Attempting to install Homebrew (interactive)..."
+    
+    if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+        log_error "Homebrew installation failed."
+        exit 1
+    fi
+
+    if [[ -f "/opt/homebrew/bin/brew" ]]; then
+        eval "$('/opt/homebrew/bin/brew' shellenv)"
+    elif [[ -f "/usr/local/bin/brew" ]]; then
+        eval "$('/usr/local/bin/brew' shellenv)"
+    fi
+
+    if ! command -v brew &>/dev/null; then
+        log_error "Homebrew installation succeeded but 'brew' not found in PATH. Please add Homebrew to your PATH manually."
+        exit 1
+    fi
+
+    log_success "Homebrew installed and available."
 }
 
 show_help() {
@@ -47,24 +62,21 @@ Examples:
 EOF
 }
 
-# Ensure brew exists before any operation except 'help' and 'list'
 case "$COMMAND" in
     help|--help|-h|list)
-        # list doesn't require brew
         ;;
     *)
         check_homebrew_and_install_if_missing
+        ensure_readline_installed
         ;;
 esac
 
 case "$COMMAND" in
     install)
         "$SCRIPT_DIR/scripts/install.sh" "$@"
-        "$SCRIPT_DIR/scripts/plugins.sh" install
         ;;
     clean)
         "$SCRIPT_DIR/scripts/clean.sh" "$@"
-        "$SCRIPT_DIR/scripts/plugins.sh" clean
         ;;
     list)
         "$SCRIPT_DIR/scripts/list.sh" "$@"

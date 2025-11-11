@@ -45,6 +45,36 @@ bundle_exists() {
     [ -f "$main_file" ]
 }
 
+iterate_bundles() {
+    local action_func="$1"
+    shift
+    local bundles=("$@")
+
+    if [[ ${#bundles[@]} -eq 0 ]]; then
+        # Process all bundles
+        for file in "$BUNDLES_DIR"/*.Brewfile; do
+            [ -e "$file" ] || continue
+            local bundle_name
+            bundle_name="$(basename "$file" .Brewfile)"
+            "$action_func" "$bundle_name"
+        done
+    else
+        # Process specified bundles
+        for bundle_name in "${bundles[@]}"; do
+            if bundle_exists "$bundle_name"; then
+                "$action_func" "$bundle_name"
+            else
+                log_warn "Bundle '$bundle_name' does not exist; skipping."
+            fi
+        done
+    fi
+}
+
+_extract_package_name() {
+    local line="$1"
+    echo "$line" | sed -n 's/^[a-z]*[[:space:]]*"\(.*\)"/\1/p'
+}
+
 parse_brewfile_line() {
     local line="$1"
     line="${line%"${line##*[![:space:]]}"}"
@@ -54,30 +84,22 @@ parse_brewfile_line() {
         \#*|"") return 1 ;;
     esac
 
+    local pkg
+    local type=""
+
     if echo "$line" | grep -q '^brew[[:space:]]*".*"$'; then
-        local pkg
-        pkg=$(echo "$line" | sed -n 's/^brew[[:space:]]*"\(.*\)"/\1/p')
-        printf "brew:%s" "$pkg"
-        return 0
-    fi
-    if echo "$line" | grep -q '^cask[[:space:]]*".*"$'; then
-        local pkg
-        pkg=$(echo "$line" | sed -n 's/^cask[[:space:]]*"\(.*\)"/\1/p')
-        printf "cask:%s" "$pkg"
-        return 0
-    fi
-    if echo "$line" | grep -q '^mas[[:space:]]*".*"$'; then
-        local pkg
-        pkg=$(echo "$line" | sed -n 's/^mas[[:space:]]*"\(.*\)"/\1/p')
-        printf "mas:%s" "$pkg"
-        return 0
-    fi
-    if echo "$line" | grep -q '^tap[[:space:]]*".*"$'; then
-        local pkg
-        pkg=$(echo "$line" | sed -n 's/^tap[[:space:]]*"\(.*\)"/\1/p')
-        printf "tap:%s" "$pkg"
-        return 0
+        type="brew"
+    elif echo "$line" | grep -q '^cask[[:space:]]*".*"$'; then
+        type="cask"
+    elif echo "$line" | grep -q '^mas[[:space:]]*".*"$'; then
+        type="mas"
+    elif echo "$line" | grep -q '^tap[[:space:]]*".*"$'; then
+        type="tap"
+    else
+        return 2
     fi
 
-    return 2
+    pkg=$(_extract_package_name "$line")
+    printf "%s:%s" "$type" "$pkg"
+    return 0
 }
