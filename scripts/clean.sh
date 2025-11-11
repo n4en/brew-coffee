@@ -1,41 +1,76 @@
 #!/bin/bash
 set -euo pipefail
 
-source ./scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 clean_bundle() {
     local bundle_name="$1"
-    local files=( $(get_brewfiles "$bundle_name") )
+    IFS=' ' read -r -a files <<< "$(get_brewfiles "$bundle_name")"
 
-    echo "🧹 Cleaning '$bundle_name' bundle..."
+    log_info "Cleaning bundle: $bundle_name"
     for file in "${files[@]}"; do
         if [[ ! -f "$file" ]]; then
-            echo "❌ Brewfile '$file' not found!"
+            log_warn "Brewfile not found: $file"
             continue
         fi
-        while IFS= read -r line; do
-            [[ "$line" =~ ^#.*$ ]] && continue
-            [[ -z "$line" ]] && continue
-            if [[ "$line" =~ brew\ \"([^\"]+)\" ]]; then
-                pkg="${BASH_REMATCH[1]}"
-                echo "🔻 Uninstalling $pkg..."
-                brew uninstall --ignore-dependencies "$pkg" 2>/dev/null || true
+
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+            if parsed=$(parse_brewfile_line "$line" 2>/dev/null); then
+                IFS=':' read -r typ name <<< "$parsed"
+                case "$typ" in
+                    brew)
+                        if brew list --formula | grep -q "^${name}\$"; then
+                            log_info "Uninstalling formula: $name"
+                            brew uninstall --ignore-dependencies "$name" || true
+                        else
+                            log_info "Formula not installed: $name"
+                        fi
+                        ;;
+                    cask)
+                        if brew list --cask | grep -q "^${name}\$"; then
+                            log_info "Uninstalling cask: $name"
+                            brew uninstall --cask "$name" || true
+                        else
+                            log_info "Cask not installed: $name"
+                        fi
+                        ;;
+                    mas)
+                        log_warn "mas entries are not auto-uninstalled. ID/Name: $name"
+                        ;;
+                    tap)
+                        log_info "Skipping tap removal for: $name (manual if desired)"
+                        ;;
+                    *)
+                        log_warn "Unknown entry type for line: $line"
+                        ;;
+                esac
+            else
+                log_warn "Could not parse line: $line"
             fi
         done < "$file"
     done
-    echo "✅ '$bundle_name' cleaned!"
-    echo
+
+    log_success "Bundle cleaned: $bundle_name"
 }
 
 if [[ $# -eq 0 ]]; then
     for file in "$BUNDLES_DIR"/*.Brewfile; do
-        clean_bundle "$(basename "$file" .Brewfile)"
+        bundle_name="$(basename "$file" .Brewfile)"
+        clean_bundle "$bundle_name"
     done
 else
     for bundle_name in "$@"; do
-        clean_bundle "$bundle_name"
+        if bundle_exists "$bundle_name"; then
+            clean_bundle "$bundle_name"
+        else
+            log_warn "Bundle '$bundle_name' does not exist; skipping."
+        fi
     done
 fi
 
-echo "🎉 All requested bundles cleaned!"
+log_success "All requested bundles cleaned."
 exit 0

@@ -1,33 +1,42 @@
 #!/bin/bash
 set -euo pipefail
 
-source ./scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 install_bundle() {
     local bundle_name="$1"
-    local files=( $(get_brewfiles "$bundle_name") )
+    IFS=' ' read -r -a files <<< "$(get_brewfiles "$bundle_name")"
 
     for file in "${files[@]}"; do
         if [[ -f "$file" ]]; then
-            echo "☕ Installing '$bundle_name' from $file..."
-            brew bundle install --file="$file"
+            log_info "Installing bundle '$bundle_name' from: $file"
+            require_brew
+            if brew bundle install --file="$file"; then
+                log_success "Installed from $file"
+            else
+                log_error "Installation failed for $file"
+            fi
         else
-            echo "❌ Brewfile '$file' not found!"
+            log_error "Brewfile not found: $file"
         fi
     done
-    echo "✅ '$bundle_name' installation complete!"
-    echo
 }
 
 if [[ $# -eq 0 ]]; then
     for file in "$BUNDLES_DIR"/*.Brewfile; do
-        install_bundle "$(basename "$file" .Brewfile)"
+        bundle_name="$(basename "$file" .Brewfile)"
+        install_bundle "$bundle_name"
     done
 else
     for bundle_name in "$@"; do
-        install_bundle "$bundle_name"
+        if bundle_exists "$bundle_name"; then
+            install_bundle "$bundle_name"
+        else
+            log_warn "Bundle '$bundle_name' does not exist; skipping."
+        fi
     done
 fi
 
-echo "🎉 All requested bundles installed!"
+log_success "All requested bundles processed."
 exit 0
