@@ -16,4 +16,4 @@ brew "fzf"
 brew "ripgrep"
 
 
-cask "visual-studio-code"
+# cask "visual-studio-code"

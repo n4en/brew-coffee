@@ -1,41 +1,68 @@
 #!/bin/bash
 set -euo pipefail
 
-source ./scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
 
+# shellcheck disable=SC2329
+uninstall_package() {
+    local type="$1"
+    local name="$2"
+    name="$(echo "$name" | xargs)"
+
+    case "$type" in
+        brew)
+            log_info "Uninstalling formula: $name"
+            brew uninstall --ignore-dependencies "$name" || log_warn "Failed to uninstall formula: $name"
+            ;;
+        cask)
+            log_info "Uninstalling cask: $name"
+            brew uninstall --cask "$name" || log_warn "Failed to uninstall cask: $name"
+            ;;
+        mas)
+            log_warn "mas entries are not auto-uninstalled. ID/Name: $name"
+            ;;
+        tap)
+            log_info "Skipping tap removal for: $name (manual if desired)"
+            ;;
+        *)
+            log_warn "Unknown entry type: $type"
+            ;;
+    esac
+}
+
+# shellcheck disable=SC2329
 clean_bundle() {
     local bundle_name="$1"
-    local files=( $(get_brewfiles "$bundle_name") )
+    IFS=' ' read -r -a files <<< "$(get_brewfiles "$bundle_name")"
 
-    echo "🧹 Cleaning '$bundle_name' bundle..."
+    log_info "Cleaning bundle: $bundle_name"
     for file in "${files[@]}"; do
         if [[ ! -f "$file" ]]; then
-            echo "❌ Brewfile '$file' not found!"
+            log_error "Brewfile not found: $file"
             continue
         fi
-        while IFS= read -r line; do
-            [[ "$line" =~ ^#.*$ ]] && continue
-            [[ -z "$line" ]] && continue
-            if [[ "$line" =~ brew\ \"([^\"]+)\" ]]; then
-                pkg="${BASH_REMATCH[1]}"
-                echo "🔻 Uninstalling $pkg..."
-                brew uninstall --ignore-dependencies "$pkg" 2>/dev/null || true
+
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+            if parsed=$(parse_brewfile_line "$line" 2>/dev/null); then
+                IFS=':' read -r typ name <<< "$parsed"
+                uninstall_package "$typ" "$name"
             fi
         done < "$file"
     done
-    echo "✅ '$bundle_name' cleaned!"
-    echo
+
+    log_success "Bundle cleaned: $bundle_name"
 }
 
-if [[ $# -eq 0 ]]; then
-    for file in "$BUNDLES_DIR"/*.Brewfile; do
-        clean_bundle "$(basename "$file" .Brewfile)"
-    done
-else
-    for bundle_name in "$@"; do
-        clean_bundle "$bundle_name"
-    done
-fi
+for arg in "$@"; do
+    if [[ "$arg" == "dev" ]]; then
+        "$SCRIPT_DIR/plugins.sh" clean
+        break
+    fi
+done
 
-echo "🎉 All requested bundles cleaned!"
+iterate_bundles "clean_bundle" "$@"
 exit 0

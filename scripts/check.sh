@@ -1,31 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-source ./scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
 
+# shellcheck disable=SC2329
 check_bundle() {
     local bundle_name="$1"
-    local files=( $(get_brewfiles "$bundle_name") )
+    IFS=' ' read -r -a files <<< "$(get_brewfiles "$bundle_name")"
 
-    echo "🔍 Checking '$bundle_name' bundle..."
+    log_info "Checking bundle: $bundle_name"
     for file in "${files[@]}"; do
-        if [[ -f "$file" ]]; then
-            if ! brew bundle check --file="$file"; then
-                echo "❌ Some packages missing in '$file'"
-            fi
+        if [[ ! -f "$file" ]]; then
+            log_error "Brewfile not found: $file"
+            return 1
+        fi
+
+        if brew bundle check --file="$file"; then
+            log_success "All packages from $file are present."
         else
-            echo "❌ Brewfile '$file' not found!"
+            log_warn "Packages missing for $file"
         fi
     done
-    echo
 }
 
-if [[ $# -eq 0 || "${1:-}" == "all" ]]; then
-    for file in "$BUNDLES_DIR"/*.Brewfile; do
-        check_bundle "$(basename "$file" .Brewfile)"
-    done
-else
-    for bundle_name in "$@"; do
-        check_bundle "$bundle_name"
-    done
-fi
+iterate_bundles "check_bundle" "$@"
+exit 0
