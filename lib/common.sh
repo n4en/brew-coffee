@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,21 +45,40 @@ bundle_exists() {
     [ -f "$main_file" ]
 }
 
+validate_bundle_name() {
+    local bundle_name="$1"
+    
+    if [ -z "$bundle_name" ]; then
+        log_error "Bundle name cannot be empty"
+        return 1
+    fi
+    
+    if ! echo "$bundle_name" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+        log_error "Invalid bundle name: '$bundle_name'. Use only alphanumeric characters, underscores, and hyphens."
+        return 1
+    fi
+    
+    if ! bundle_exists "$bundle_name"; then
+        log_error "Bundle '$bundle_name' does not exist"
+        return 1
+    fi
+    
+    return 0
+}
+
 iterate_bundles() {
     local action_func="$1"
     shift
     local bundles=("$@")
 
-    if [[ ${#bundles[@]} -eq 0 ]]; then
-        # Process all bundles
-        for file in "$BUNDLES_DIR"/*.Brewfile; do
-            [ -e "$file" ] || continue
+    if [ ${#bundles[@]} -eq 0 ]; then
+        find "$BUNDLES_DIR" -maxdepth 1 -name "*.Brewfile" -type f | sort | while IFS= read -r file; do
+            [ -z "$file" ] && continue
             local bundle_name
             bundle_name="$(basename "$file" .Brewfile)"
             "$action_func" "$bundle_name"
         done
     else
-        # Process specified bundles
         for bundle_name in "${bundles[@]}"; do
             if bundle_exists "$bundle_name"; then
                 "$action_func" "$bundle_name"

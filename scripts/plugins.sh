@@ -55,6 +55,40 @@ find_vscode_cli() {
     echo "$vscode_cli"
 }
 
+process_vscode_extension() {
+    local plugin="$1"
+    local action="$2"
+    local vscode_cli="$3"
+
+    local icon emoji_action
+    case "$action" in
+        install)
+            icon="📦"
+            emoji_action="Installing VSCode extension"
+            ;;
+        uninstall)
+            icon="🗑️"
+            emoji_action="Uninstalling VSCode extension"
+            ;;
+    esac
+
+    if "$vscode_cli" --list-extensions 2>/dev/null | grep -i "^${plugin}$" > /dev/null 2>&1; then
+        if [ "$action" = "install" ]; then
+            echo "✅ Extension $plugin is already installed"
+            return 0
+        fi
+        echo "$icon $emoji_action: $plugin"
+        "$vscode_cli" --uninstall-extension "$plugin" || echo "⚠️  Failed to $action $plugin"
+    else
+        if [ "$action" = "uninstall" ]; then
+            echo "ℹ️  Extension $plugin is not installed"
+            return 0
+        fi
+        echo "$icon $emoji_action: $plugin"
+        "$vscode_cli" --install-extension "$plugin" || echo "⚠️  Failed to $action $plugin"
+    fi
+}
+
 process_plugin_file() {
     local tool="$1"
     local action="$2"
@@ -63,14 +97,22 @@ process_plugin_file() {
     [ ! -f "$file" ] && return 0
 
     local vscode_cli
-    vscode_cli="$(find_vscode_cli)"
-
     case "$action" in
         install)
             echo "☕ Installing $tool plugins..."
             ;;
         uninstall)
             echo "🧹 Uninstalling $tool plugins..."
+            ;;
+    esac
+
+    case "$tool" in
+        vscode)
+            vscode_cli="$(find_vscode_cli)"
+            if [ -z "$vscode_cli" ]; then
+                echo "⚠️  VSCode CLI not found"
+                return 1
+            fi
             ;;
     esac
 
@@ -85,29 +127,7 @@ process_plugin_file() {
 
         case "$tool" in
             vscode)
-                if [ -z "$vscode_cli" ]; then
-                    echo "⚠️  VSCode CLI not found"
-                    return 1
-                fi
-
-                case "$action" in
-                    install)
-                        if "$vscode_cli" --list-extensions 2>/dev/null | grep -i "^${plugin}$" > /dev/null 2>&1; then
-                            echo "✅ Extension $plugin is already installed"
-                        else
-                            echo "📦 Installing VSCode extension: $plugin"
-                            "$vscode_cli" --install-extension "$plugin" || echo "⚠️  Failed to install $plugin"
-                        fi
-                        ;;
-                    uninstall)
-                        if "$vscode_cli" --list-extensions 2>/dev/null | grep -i "^${plugin}$" > /dev/null 2>&1; then
-                            echo "🗑️  Uninstalling VSCode extension: $plugin"
-                            "$vscode_cli" --uninstall-extension "$plugin" || echo "⚠️  Failed to uninstall $plugin"
-                        else
-                            echo "ℹ️  Extension $plugin is not installed"
-                        fi
-                        ;;
-                esac
+                process_vscode_extension "$plugin" "$action" "$vscode_cli"
                 ;;
             chrome|jetbrains)
                 echo "⚠️  $action not implemented yet for $tool plugin $plugin"

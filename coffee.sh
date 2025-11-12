@@ -1,22 +1,29 @@
-#!/usr/bin/env bash
+#!/bin/sh
+# shellcheck shell=bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if command -v bash >/dev/null 2>&1; then
+    if [ -z "${BASH_VERSION:-}" ]; then
+        exec bash "$0" "$@"
+    fi
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
 COMMAND="${1:-help}"
 shift || true
 
 ensure_readline_installed() {
-    if ! brew list --formula | grep -q '^readline$'; then
+    if ! /bin/sh -c 'brew list --formula 2>/dev/null | grep -q "^readline$"'; then
         log_warn "readline not found. Installing readline via Homebrew..."
-        brew install readline
+        /bin/sh -c 'brew install readline'
         log_success "readline installed."
     fi
 }
 
 check_homebrew_and_install_if_missing() {
-    if command -v brew &>/dev/null; then
+    if command -v brew >/dev/null 2>&1; then
         return 0
     fi
 
@@ -33,7 +40,7 @@ check_homebrew_and_install_if_missing() {
         eval "$('/usr/local/bin/brew' shellenv)"
     fi
 
-    if ! command -v brew &>/dev/null; then
+    if ! command -v brew >/dev/null 2>&1; then
         log_error "Homebrew installation succeeded but 'brew' not found in PATH. Please add Homebrew to your PATH manually."
         exit 1
     fi
@@ -63,7 +70,7 @@ EOF
 }
 
 case "$COMMAND" in
-    help|--help|-h|list)
+    help|--help|-h)
         ;;
     *)
         check_homebrew_and_install_if_missing

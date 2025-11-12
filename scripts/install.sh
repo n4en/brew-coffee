@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$CURRENT_SCRIPT_DIR/.." && pwd)"
 BUNDLES_DIR="$REPO_ROOT/bundles"
 source "$REPO_ROOT/lib/common.sh"
 
@@ -30,12 +30,19 @@ install_bundle() {
 }
 
 for arg in "$@"; do
-    if [[ "$arg" == "dev" ]]; then
-        "$SCRIPT_DIR/plugins.sh" install
-        break
+    if ! validate_bundle_name "$arg"; then
+        exit 1
     fi
 done
 
 iterate_bundles "install_bundle" "$@"
+
+for arg in "$@"; do
+    if [[ "$arg" == "dev" ]]; then
+        "$CURRENT_SCRIPT_DIR/plugins.sh" install
+        break
+    fi
+done
+
 log_success "All requested bundles processed."
 exit 0

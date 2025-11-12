@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$CURRENT_SCRIPT_DIR/.." && pwd)"
 BUNDLES_DIR="$REPO_ROOT/bundles"
 source "$REPO_ROOT/lib/common.sh"
 
@@ -18,7 +18,6 @@ uninstall_package() {
             ;;
         cask)
             log_info "Checking if cask is installed: $name"
-            brew list --cask 2>/dev/null
             if brew list --cask 2>/dev/null | grep -q "^${name}\$"; then
                 log_info "Uninstalling cask: $name"
                 brew uninstall --cask "$name" || log_warn "Failed to uninstall cask: $name"
@@ -62,8 +61,14 @@ clean_bundle() {
 
 for arg in "$@"; do
     if [[ "$arg" == "dev" ]]; then
-        "$SCRIPT_DIR/plugins.sh" clean
+        "$CURRENT_SCRIPT_DIR/plugins.sh" clean
         break
+    fi
+done
+
+for arg in "$@"; do
+    if ! validate_bundle_name "$arg"; then
+        exit 1
     fi
 done
 
