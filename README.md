@@ -181,3 +181,9 @@ git checkout -b feature/my-new-bundle
 
 3. Make changes
 4. Submit a Pull Request
+
+---
+
+## Platform Compatibility
+
+- ✅ Tested and works on both **Linux** and **macOS** (Apple Silicon)
