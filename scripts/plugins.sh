@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2317
 set -euo pipefail
 
 CURRENT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

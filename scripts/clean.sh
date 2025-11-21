@@ -37,6 +37,7 @@ uninstall_package() {
             log_warn "Unknown entry type: $type"
             ;;
     esac
+    log_success "Bundle cleaned: $bundle_name"
 }
 
 # shellcheck disable=SC2329

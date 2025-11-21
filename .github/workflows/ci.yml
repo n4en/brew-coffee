@@ -1,4 +1,7 @@
-name: Makefile CI
+name: CI - Lint & Test
+
+env:
+  SHELLCHECK_VERSION: latest
 
 on:
   push:
@@ -7,13 +10,12 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  shellcheck:
+    name: ShellCheck Lint
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Install ShellCheck
-      run: sudo apt-get update && sudo apt-get install -y shellcheck
-    - name: Run check
-      run: make lint
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Run ShellCheck
+        run: make lint

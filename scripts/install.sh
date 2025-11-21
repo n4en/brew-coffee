@@ -36,11 +36,9 @@ for arg in "$@"; do
     fi
 done
 
-# Track exit status of bundle installation
 overall_status=0
 iterate_bundles "install_bundle" "$@" || overall_status=$?
 
-# Only proceed with plugins if bundles installed successfully
 if [ $overall_status -eq 0 ]; then
     for arg in "$@"; do
         if [[ "$arg" == "dev" ]]; then

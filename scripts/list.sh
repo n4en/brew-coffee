@@ -20,7 +20,7 @@ echo "$bundle_list" | while IFS= read -r bundle; do
     echo " - $bundle"
 done
 
-count=$(echo "$bundle_list" | wc -l)
+count=$(echo "$bundle_list" | wc -l) || count=0
 echo ""
 log_info "Total: $count bundle(s)"
 exit 0
