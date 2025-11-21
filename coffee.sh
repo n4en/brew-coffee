@@ -1,14 +1,8 @@
-#!/bin/sh
-# shellcheck shell=bash
+#!/bin/bash
+# shellcheck disable=SC2317
 set -euo pipefail
 
 readonly BREW_COFFEE_VERSION="1.0.0"
-
-if command -v bash >/dev/null 2>&1; then
-    if [ -z "${BASH_VERSION:-}" ]; then
-        exec bash "$0" "$@"
-    fi
-fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
@@ -17,9 +11,9 @@ COMMAND="${1:-help}"
 shift || true
 
 ensure_readline_installed() {
-    if ! /bin/sh -c 'brew list --formula 2>/dev/null | grep -q "^readline$"'; then
+    if ! brew list --formula 2>/dev/null | grep -q "^readline$"; then
         log_warn "readline not found. Installing readline via Homebrew..."
-        /bin/sh -c 'brew install readline'
+        brew install readline
         log_success "readline installed."
     fi
 }
