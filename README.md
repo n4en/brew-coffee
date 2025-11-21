@@ -86,7 +86,7 @@ Remove installed packages for a bundle:
 
 ## ⚠️ Important: Cleaning Bundles & Dependencies
 
-When you run `./coffee.sh clean <bundle>`, Homebrew will uninstall all packages in that bundle. Homebrew may also automatically remove any dependencies it considers "unneeded"—even if those dependencies are used by other bundles. This is standard Homebrew behavior and cannot be controlled by the script.
+When you run `./coffee.sh clean <bundle>`, Homebrew will uninstall all packages in that bundle. Homebrew may also automatically remove any dependencies it considers "unneeded" even if those dependencies are used by other bundles. This is standard Homebrew behavior and cannot be controlled by the script.
 
 **Best Practice:**
 - If you clean a bundle and other bundles break, simply re-run `./coffee.sh install <other-bundle>` to restore missing dependencies.
