@@ -2,6 +2,8 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+readonly BREW_COFFEE_VERSION="1.0.0"
+
 if command -v bash >/dev/null 2>&1; then
     if [ -z "${BASH_VERSION:-}" ]; then
         exec bash "$0" "$@"
@@ -53,24 +55,29 @@ show_help() {
 ☕ brew-coffee — developer environment setup made easy
 
 Usage:
-  brew-coffee <command> [bundle-name]
+  ./coffee.sh <command> [bundle-name]
 
 Commands:
   install [bundle]   Install a specific bundle or all when omitted
   list               List all available bundles
-  check [bundle|all] Check if bundles' packages are installed
+  check [bundle]     Check if bundles' packages are installed
   clean [bundle]     Uninstall packages from a bundle
+  version            Show version information
   help               Show this help
 
 Examples:
-  brew-coffee install nodejs
-  brew-coffee check all
-  brew-coffee list
+  ./coffee.sh install nodejs
+  ./coffee.sh check aws
+  ./coffee.sh list
+
+Version: $BREW_COFFEE_VERSION
 EOF
 }
 
 case "$COMMAND" in
     help|--help|-h)
+        ;;
+    version|--version|-v)
         ;;
     *)
         check_homebrew_and_install_if_missing
@@ -90,6 +97,9 @@ case "$COMMAND" in
         ;;
     check)
         "$SCRIPT_DIR/scripts/check.sh" "$@"
+        ;;
+    version|--version|-v)
+        echo "brew-coffee v$BREW_COFFEE_VERSION"
         ;;
     help|--help|-h|"")
         show_help

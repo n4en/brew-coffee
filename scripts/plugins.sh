@@ -1,7 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-PLUGINS_DIR="./plugins"
+CURRENT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$CURRENT_SCRIPT_DIR/.." && pwd)"
+PLUGINS_DIR="$REPO_ROOT/plugins"
 
 if [ "$(uname -s)" = "Darwin" ]; then
     OS_TYPE="macos"

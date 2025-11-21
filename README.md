@@ -84,6 +84,17 @@ Remove installed packages for a bundle:
 
 ---
 
+## ⚠️ Important: Cleaning Bundles & Dependencies
+
+When you run `./coffee.sh clean <bundle>`, Homebrew will uninstall all packages in that bundle. Homebrew may also automatically remove any dependencies it considers "unneeded"—even if those dependencies are used by other bundles. This is standard Homebrew behavior and cannot be controlled by the script.
+
+**Best Practice:**
+- If you clean a bundle and other bundles break, simply re-run `./coffee.sh install <other-bundle>` to restore missing dependencies.
+- For maximum safety, use `clean` only when you are sure you do not need the packages elsewhere.
+- Consider using a Homebrew restore or backup if you want to revert changes.
+
+---
+
 ### List Available Bundles
 
 ```bash
@@ -151,6 +162,13 @@ eval File.read("./bundles/infra.Brewfile")
 
 ---
 
+## Customizing Bundles
+
+- You can freely **add or remove packages** in any bundle (`bundles/*.Brewfile`) to suit your needs.
+- The provided bundles include packages that are most commonly used by developers, but you can tailor them for your own workflow or team.
+
+---
+
 ## Contributing
 
 Contributions are welcome! You can:
@@ -170,3 +188,9 @@ git checkout -b feature/my-new-bundle
 
 3. Make changes
 4. Submit a Pull Request
+
+---
+
+## Platform Compatibility
+
+- ✅ Tested and works on both **Linux** and **macOS** (Apple Silicon)

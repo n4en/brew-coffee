@@ -1,1 +1,9 @@
 dbaeumer.vscode-eslint
+ms-python.python
+esbenp.prettier-vscode
+ms-vscode.vscode-typescript-next
+GitHub.copilot
+redhat.vscode-yaml
+PKief.material-icon-theme
+VisualStudioExptTeam.vscodeintellicode
+GitHub.vscode-pull-request-github

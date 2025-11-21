@@ -35,14 +35,24 @@ for arg in "$@"; do
     fi
 done
 
-iterate_bundles "install_bundle" "$@"
+# Track exit status of bundle installation
+overall_status=0
+iterate_bundles "install_bundle" "$@" || overall_status=$?
 
-for arg in "$@"; do
-    if [[ "$arg" == "dev" ]]; then
-        "$CURRENT_SCRIPT_DIR/plugins.sh" install
-        break
-    fi
-done
+# Only proceed with plugins if bundles installed successfully
+if [ $overall_status -eq 0 ]; then
+    for arg in "$@"; do
+        if [[ "$arg" == "dev" ]]; then
+            "$CURRENT_SCRIPT_DIR/plugins.sh" install || overall_status=$?
+            break
+        fi
+    done
+fi
 
-log_success "All requested bundles processed."
-exit 0
+if [ $overall_status -eq 0 ]; then
+    log_success "All requested bundles processed."
+    exit 0
+else
+    log_error "Bundle installation encountered errors."
+    exit 1
+fi

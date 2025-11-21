@@ -1,2 +1,1 @@
-brew "terraform"
 brew "ansible"
