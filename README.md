@@ -162,6 +162,13 @@ eval File.read("./bundles/infra.Brewfile")
 
 ---
 
+## Customizing Bundles
+
+- You can freely **add or remove packages** in any bundle (`bundles/*.Brewfile`) to suit your needs.
+- The provided bundles include packages that are most commonly used by developers, but you can tailor them for your own workflow or team.
+
+---
+
 ## Contributing
 
 Contributions are welcome! You can:
