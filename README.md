@@ -44,6 +44,29 @@ chmod +x ./coffee.sh
 
 `coffee.sh` is the main entry point. All operations (install, clean, check, list) are delegated to the scripts in `scripts/` and handle bundles in `bundles/`.
 
+---
+
+### List Available Bundles
+
+```bash
+./coffee.sh list
+```
+
+Output example:
+
+```
+ - python
+ - nodejs
+ - aws
+ - azure
+ - gcp
+ - k8s
+ - infra
+ - dev
+```
+
+---
+
 ### Install Bundles
 
 #### Install a single bundle
@@ -62,6 +85,22 @@ chmod +x ./coffee.sh
 
 ```bash
 ./coffee.sh install
+```
+
+---
+
+### Check Bundles
+
+Verify whether all packages in a bundle are installed:
+
+```bash
+./coffee.sh check aws
+```
+
+Check all bundles:
+
+```bash
+./coffee.sh check
 ```
 
 ---
@@ -92,43 +131,6 @@ When you run `./coffee.sh clean <bundle>`, Homebrew will uninstall all packages 
 - If you clean a bundle and other bundles break, simply re-run `./coffee.sh install <other-bundle>` to restore missing dependencies.
 - For maximum safety, use `clean` only when you are sure you do not need the packages elsewhere.
 - Consider using a Homebrew restore or backup if you want to revert changes.
-
----
-
-### List Available Bundles
-
-```bash
-./coffee.sh list
-```
-
-Output example:
-
-```
- - python
- - nodejs
- - aws
- - azure
- - gcp
- - k8s
- - infra
- - dev
-```
-
----
-
-### Check Bundles
-
-Verify whether all packages in a bundle are installed:
-
-```bash
-./coffee.sh check aws
-```
-
-Check all bundles:
-
-```bash
-./coffee.sh check
-```
 
 ---
 
